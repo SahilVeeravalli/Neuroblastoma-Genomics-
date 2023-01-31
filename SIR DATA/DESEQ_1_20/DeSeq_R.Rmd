@@ -1,0 +1,133 @@
+---
+title: "RNASeq"
+author: "Sahil Veeravalli"
+date: "2023-01-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+library("readxl")
+```
+
+
+```{r}
+DeSeq_pheno_taz <- read_excel("C:/Users/214lk/Desktop/SIR DATA/DESEQ_1_20/RNASeq_pheno_taz.xlsx")
+```
+
+```{r}
+"C:/Users/214lk/Desktop/SIR DATA/DESEQ_1_20/raw_counts/" -> directory_genes
+sample_files_genes <- grep(".txt", list.files(directory_genes), value=TRUE)
+
+sample_table_genes <- data.frame(sampleName = DeSeq_pheno_taz$Sample_name, fileName = DeSeq_pheno_taz$file_Name, condition = DeSeq_pheno_taz)
+
+#Making a table with condition
+
+```
+
+```{r}
+library(DESeq2)
+```
+
+```{r}
+sample_table_genes <- subset(sample_table_genes,
+sample_table_genes$condition.Pulldown == "Input")
+```
+
+```{r}
+ddsHTrna_seq_taz <- DESeqDataSetFromHTSeqCount(sampleTable = sample_table_genes,
+                                               directory = directory_genes,
+                                               design = ~ condition.Treatment)
+```
+
+```{r}
+ddsHTrna_seq_taz <- DESeq(ddsHTrna_seq_taz)
+
+```
+```{r}
+#vst = Quickly estimate dispersion trend and apply a variance stabilizing transformation
+vsd_genes <- vst(ddsHTrna_seq_taz, blind=FALSE)
+```
+```{r}
+plotPCA(vsd_genes, intgroup=c("condition.Treatment"))
+plotPCA(vsd_genes, intgroup=c("condition.Cell_line"))
+```
+```{r}
+#Looking at only BE2 Cells
+sample_table_genes_BE2 <- subset(sample_table_genes,
+sample_table_genes$condition.Cell_line == "BE2")
+```
+
+```{r}
+#comparing treatments
+ddsHTrna_seq_BE2 <- DESeqDataSetFromHTSeqCount(sampleTable = sample_table_genes_BE2,
+                                               directory = directory_genes,
+                                               design = ~ condition.Treatment)
+
+```
+
+```{r}
+ddsHTrna_seq_BE2 <- DESeq(ddsHTrna_seq_BE2)
+
+
+```
+```{r}
+vsd_genes_BE2<- vst(ddsHTrna_seq_BE2, blind=FALSE)
+```
+
+```{r}
+plotPCA(vsd_genes_BE2, intgroup=c("condition.Treatment"))
+```
+
+```{r}
+#Plotting MYCN gene in BE2 Cell line (Can be any gene?)
+plotCounts(ddsHTrna_seq_BE2, gene = "MYCN", intgroup="condition.Treatment")
+```
+```{r}
+line_seq_BE2_res = results(ddsHTrna_seq_BE2, contrast =c("condition.Treatment", "DMSO", "Taz"))
+summary(line_seq_BE2_res)
+```
+
+```{r}
+line_seq_BE2_res_ordered <- line_seq_BE2_res[order(line_seq_BE2_res$padj),]
+line_seq_BE2_res_ordered <- subset(line_seq_BE2_res_ordered, padj < 0.05)
+line_seq_BE2_res_ordered.pos <- subset(line_seq_BE2_res_ordered,
+line_seq_BE2_res_ordered$log2FoldChange > 0)
+line_seq_BE2_res_ordered.neg <- subset(line_seq_BE2_res_ordered,
+line_seq_BE2_res_ordered$log2FoldChange < 0)
+
+```
+
+```{r}
+write.table(as.list(as.data.frame(rownames(line_seq_BE2_res_ordered.pos))), 
+"C:/Users/214lk/Desktop/SIR DATA/DESEQ_1_20/line_seq_BE2_res_ordered.pos.txt", quote = FALSE, row.names = FALSE)
+
+write.table(as.list(as.data.frame(rownames(line_seq_BE2_res_ordered.neg))), 
+"C:/Users/214lk/Desktop/SIR DATA/DESEQ_1_20/line_seq_BE2_res_ordered.neg.txt", quote = FALSE, row.names = FALSE)
+```
+
+
+
