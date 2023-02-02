@@ -1,0 +1,254 @@
+---
+title: "DeSeqDecitabine"
+author: "Sahil Veeravalli"
+date: "2023-02-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+library("readxl")
+```
+```{r}
+DeSeq_pheno_dec <- read_excel("C:/Users/214lk/Desktop/SIR DATA/DESEQ_2_1_Decitabine/RNASeq_pheno_decitabine.xlsx")
+```
+```{r}
+"C:/Users/214lk/Desktop/SIR DATA/DESEQ_2_1_Decitabine/raw_counts/" -> directory_genes
+sample_files_genes <- grep(".txt", list.files(directory_genes), value=TRUE)
+
+sample_table_genes <- data.frame(sampleName = DeSeq_pheno_dec$Sample_name, fileName = DeSeq_pheno_dec$file_Name, condition = DeSeq_pheno_dec)
+
+#Making a table with condition
+
+```
+```{r}
+library(DESeq2)
+```
+```{r}
+ddsHTrna_seq_dec <- DESeqDataSetFromHTSeqCount(sampleTable = sample_table_genes,
+                                               directory = directory_genes,
+                                               design = ~ condition.Treatment)
+```
+```{r}
+ddsHTrna_seq_dec <- DESeq(ddsHTrna_seq_dec)
+
+```
+```{r}
+#vst = Quickly estimate dispersion trend and apply a variance stabilizing transformation
+vsd_genes <- vst(ddsHTrna_seq_dec, blind=FALSE)
+```
+```{r}
+plotPCA(vsd_genes, intgroup=c("condition.Treatment"))
+plotPCA(vsd_genes, intgroup=c("condition.Cell_line"))
+```
+```{r}
+#Looking at only BE2 Cells
+sample_table_genes_BE2 <- subset(sample_table_genes,
+sample_table_genes$condition.Cell_line == "BE2")
+```
+```{r}
+#comparing treatments
+ddsHTrna_seq_BE2 <- DESeqDataSetFromHTSeqCount(sampleTable = sample_table_genes_BE2,
+                                               directory = directory_genes,
+                                               design = ~ condition.Treatment)
+
+```
+
+```{r}
+ddsHTrna_seq_BE2 <- DESeq(ddsHTrna_seq_BE2)
+
+
+```
+```{r}
+vsd_genes_BE2<- vst(ddsHTrna_seq_BE2, blind=FALSE)
+```
+
+```{r}
+plotPCA(vsd_genes_BE2, intgroup=c("condition.Treatment"))
+```
+```{r}
+line_seq_BE2_dec_res = results(ddsHTrna_seq_BE2, contrast =c("condition.Treatment", "Daza", "DMSO"))
+summary(line_seq_BE2_dec_res)
+```
+
+```{r}
+line_seq_BE2_dec_res_ordered <- line_seq_BE2_dec_res[order(line_seq_BE2_dec_res$padj),]
+line_seq_BE2_dec_res_ordered <- subset(line_seq_BE2_dec_res_ordered, padj < 0.05)
+line_seq_BE2_dec_res_ordered.pos <- subset(line_seq_BE2_dec_res_ordered,
+line_seq_BE2_dec_res_ordered$log2FoldChange > 0)
+line_seq_BE2_dec_res_ordered.neg <- subset(line_seq_BE2_dec_res_ordered,
+line_seq_BE2_dec_res_ordered$log2FoldChange < 0)
+
+```
+
+```{r}
+length(rownames(line_seq_BE2_dec_res_ordered.pos))
+```
+
+
+```{r}
+rownames(line_seq_BE2_res_ordered.pos)
+```
+
+
+```{r}
+write.table(as.list(as.data.frame(rownames(line_seq_BE2_dec_res_ordered.pos))), 
+"C:/Users/214lk/Desktop/SIR DATA/DESEQ_2_1_Decitabine/line_seq_BE2_dec_res_ordered.pos.txt", quote = FALSE, row.names = FALSE)
+
+write.table(as.list(as.data.frame(rownames(line_seq_BE2_dec_res_ordered.neg))), 
+"C:/Users/214lk/Desktop/SIR DATA/DESEQ_2_1_Decitabine/line_seq_BE2_dec_res_ordered.neg.txt", quote = FALSE, row.names = FALSE)
+```
+```{r}
+plotMA(line_seq_BE2_res)
+```
+```{r}
+plotMA(ddsHTrna_seq_dec)
+```
+```{r}
+library(dplyr)
+```
+
+```{r}
+BE2_taz_dec_pos_inter <- intersect(rownames(line_seq_BE2_dec_res_ordered.pos), rownames(line_seq_BE2_res_ordered.pos))
+```
+```{r}
+write.table(as.list(as.data.frame(BE2_taz_dec_pos_inter)), 
+"C:/Users/214lk/Desktop/SIR DATA/DESEQ_2_1_Decitabine/BE2_taz_dec_pos_inter.txt", quote = FALSE, row.names = FALSE)
+```
+```{r}
+length(BE2_taz_dec_pos_inter)
+```
+
+```{r}
+#Looking at only WN Cells
+sample_table_genes_WN <- subset(sample_table_genes,
+sample_table_genes$condition.Cell_line == "WN")
+```
+```{r}
+#comparing treatments
+ddsHTrna_seq_WN <- DESeqDataSetFromHTSeqCount(sampleTable = sample_table_genes_WN,
+                                               directory = directory_genes,
+                                               design = ~ condition.Treatment)
+
+```
+
+```{r}
+ddsHTrna_seq_WN <- DESeq(ddsHTrna_seq_WN)
+
+
+```
+```{r}
+vsd_genes_WN<- vst(ddsHTrna_seq_WN, blind=FALSE)
+```
+
+```{r}
+plotPCA(vsd_genes_WN, intgroup=c("condition.Treatment"))
+```
+```{r}
+line_seq_WN_dec_res = results(ddsHTrna_seq_WN, contrast =c("condition.Treatment", "Daza", "DMSO"))
+summary(line_seq_WN_dec_res)
+```
+
+```{r}
+line_seq_WN_dec_res_ordered <- line_seq_WN_dec_res[order(line_seq_WN_dec_res$padj),]
+line_seq_WN_dec_res_ordered <- subset(line_seq_WN_dec_res_ordered, padj < 0.05)
+line_seq_WN_dec_res_ordered.pos <- subset(line_seq_WN_dec_res_ordered,
+line_seq_WN_dec_res_ordered$log2FoldChange > 0)
+line_seq_WN_dec_res_ordered.neg <- subset(line_seq_WN_dec_res_ordered,
+line_seq_WN_dec_res_ordered$log2FoldChange < 0)
+
+```
+
+```{r}
+length(rownames(line_seq_WN_dec_res_ordered.pos))
+```
+
+
+```{r}
+rownames(line_seq_WN_res_ordered.pos)
+```
+
+
+```{r}
+write.table(as.list(as.data.frame(rownames(line_seq_WN_dec_res_ordered.pos))), 
+"C:/Users/214lk/Desktop/SIR DATA/DESEQ_2_1_Decitabine/line_seq_WN_dec_res_ordered.pos.txt", quote = FALSE, row.names = FALSE)
+
+write.table(as.list(as.data.frame(rownames(line_seq_WN_dec_res_ordered.neg))), 
+"C:/Users/214lk/Desktop/SIR DATA/DESEQ_2_1_Decitabine/line_seq_WN_dec_res_ordered.neg.txt", quote = FALSE, row.names = FALSE)
+```
+```{r}
+plotMA(line_seq_WN_dec_res)
+```
+```{r}
+plotMA(ddsHTrna_seq_WN)
+```
+```{r}
+library(dplyr)
+```
+
+```{r}
+WN_taz_dec_pos_inter <- intersect(rownames(line_seq_WN_dec_res_ordered.pos), rownames(line_seq_WN_res_ordered.pos))
+```
+```{r}
+write.table(as.list(as.data.frame(WN_taz_dec_pos_inter)), 
+"C:/Users/214lk/Desktop/SIR DATA/DESEQ_2_1_Decitabine/WN_taz_dec_pos_inter.txt", quote = FALSE, row.names = FALSE)
+```
+```{r}
+length(WN_taz_dec_pos_inter)
+```
+
+VENN DIAGRAMS
+```{r}
+
+library(VennDiagram)    
+```
+```{r}
+length(WN_taz_dec_pos_inter)
+```
+
+
+```{r}
+#Making a Venn Diagram for BE2 TAZ up vs BE2 DAZA UP
+# load Venn diagram package
+  
+# move to new plotting page
+grid.newpage()
+  
+# create pairwise Venn diagram
+draw.pairwise.venn(area1=318, area2=2627,cross.area=81,
+                   category=c("BE2 TAZ UP","BE2 DAZA UP"),fill=c("Red","Yellow"))
+```
+```{r}
+#Making a Venn Diagram for WN TAZ up vs WN DAZA UP
+# load Venn diagram package
+  
+# move to new plotting page
+grid.newpage()
+  
+# create pairwise Venn diagram
+draw.pairwise.venn(area1=1164, area2=2348,cross.area=,
+                   category=c("WN TAZ UP","WN DAZA UP"),fill=c("Red","Yellow"))
+```
+
